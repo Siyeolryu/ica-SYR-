@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "while-you-were-sleeping-stocks": {
+      "command": "python",
+      "args": [
+        "C:\\Users\\tlduf\\Downloads\\ica-project\\backend\\mcp_servers\\stocks_server.py"
+      ],
+      "env": {
+        "PYTHONPATH": "C:\\Users\\tlduf\\Downloads\\ica-project\\backend"
+      }
+    },
+    "while-you-were-sleeping-briefing": {
+      "command": "python",
+      "args": [
+        "C:\\Users\\tlduf\\Downloads\\ica-project\\backend\\mcp_servers\\briefing_server.py"
+      ],
+      "env": {
+        "PYTHONPATH": "C:\\Users\\tlduf\\Downloads\\ica-project\\backend"
+      }
+    }
+  }
+}

@@ -1,0 +1,132 @@
+/**
+ * 백엔드 API 호출 유틸리티 함수
+ */
+
+const API_BASE_URL = 'http://localhost:8000';
+
+export interface NewsArticle {
+  title: string;
+  url: string;
+  published_date: string;
+  author: string | null;
+  summary: string;
+  source: string;
+}
+
+export interface NewsResponse {
+  success: boolean;
+  data: {
+    ticker: string;
+    news: NewsArticle[];
+    total: number;
+    days_back?: number;
+    period?: string;
+    generated_at: string;
+  };
+}
+
+export interface MultipleNewsResponse {
+  success: boolean;
+  data: {
+    news_by_ticker: Record<string, NewsArticle[]>;
+    total_tickers: number;
+    total_articles: number;
+    days_back: number;
+    generated_at: string;
+  };
+}
+
+/**
+ * 특정 종목의 뉴스를 가져옵니다
+ */
+export async function fetchStockNews(
+  ticker: string,
+  limit: number = 5,
+  daysBack: number = 7
+): Promise<NewsArticle[]> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/v1/news/stock/${ticker}?limit=${limit}&days_back=${daysBack}`
+    );
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data: NewsResponse = await response.json();
+    return data.data.news;
+  } catch (error) {
+    console.error(`Failed to fetch news for ${ticker}:`, error);
+    return [];
+  }
+}
+
+/**
+ * 특정 종목의 24시간 뉴스를 가져옵니다
+ */
+export async function fetchStock24hNews(
+  ticker: string,
+  limit: number = 5
+): Promise<NewsArticle[]> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/v1/news/stock/${ticker}/24h?limit=${limit}`
+    );
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data: NewsResponse = await response.json();
+    return data.data.news;
+  } catch (error) {
+    console.error(`Failed to fetch 24h news for ${ticker}:`, error);
+    return [];
+  }
+}
+
+/**
+ * 여러 종목의 뉴스를 한 번에 가져옵니다
+ */
+export async function fetchMultipleStocksNews(
+  tickers: string[],
+  limitPerStock: number = 3,
+  daysBack: number = 7
+): Promise<Record<string, NewsArticle[]>> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/v1/news/stocks/batch?limit_per_stock=${limitPerStock}&days_back=${daysBack}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(tickers),
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data: MultipleNewsResponse = await response.json();
+    return data.data.news_by_ticker;
+  } catch (error) {
+    console.error('Failed to fetch multiple stocks news:', error);
+    return {};
+  }
+}
+
+/**
+ * 백엔드 헬스체크
+ */
+export async function checkBackendHealth(): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/health`);
+    return response.ok;
+  } catch (error) {
+    console.error('Backend health check failed:', error);
+    return false;
+  }
+}
+

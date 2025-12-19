@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(node --version:*)",
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "Bash(python -c:*)",
+      "Bash(curl:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "WebSearch",
+      "WebFetch(domain:yahooquery.dpguthrie.com)"
+    ]
+  }
+}

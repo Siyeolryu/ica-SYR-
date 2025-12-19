@@ -1,0 +1,13 @@
+# FastAPI 및 관련 의존성
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+python-multipart>=0.0.6
+
+# 기존 프로젝트 의존성
+yahooquery>=2.3.0
+google-generativeai>=0.3.0
+exa-py>=1.0.0
+APScheduler>=3.10.4
+Pillow>=10.0.0
+python-dotenv>=1.0.0
