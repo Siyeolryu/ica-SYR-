@@ -1,0 +1,140 @@
+name: Daily Stock Briefing
+
+# 매일 한국시간 오전 7시에 실행 (UTC 22:00 = KST 07:00)
+on:
+  schedule:
+    - cron: '0 22 * * *'  # UTC 22:00 = KST 07:00 (다음날)
+
+  # 수동 실행 옵션 (테스트용)
+  workflow_dispatch:
+
+jobs:
+  generate-and-send-briefing:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 저장소 체크아웃
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Python 3.12 환경 설정
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'  # pip 캐시 활성화
+
+      # 3. 의존성 설치
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # 4. 환경 변수 설정
+      - name: Set up environment variables
+        run: |
+          cd backend
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+          echo "EXA_API_KEY=${{ secrets.EXA_API_KEY }}" >> .env
+          echo "SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}" >> .env
+          echo "EMAIL_SMTP_SERVER=${{ secrets.EMAIL_SMTP_SERVER }}" >> .env
+          echo "EMAIL_SMTP_PORT=${{ secrets.EMAIL_SMTP_PORT }}" >> .env
+          echo "EMAIL_SENDER=${{ secrets.EMAIL_SENDER }}" >> .env
+          echo "EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}" >> .env
+          echo "EMAIL_RECIPIENTS=${{ secrets.EMAIL_RECIPIENTS }}" >> .env
+
+      # 5. 화제 종목 조회
+      - name: Get trending stocks
+        id: trending
+        run: |
+          cd backend
+          python -c "
+          import sys
+          sys.path.insert(0, '.')
+          from services.trending_stock_service import TrendingStockService
+
+          # 화제 종목 조회
+          result = TrendingStockService.get_trending_stocks(
+              screener_types=['most_actives', 'day_gainers'],
+              count=5
+          )
+
+          print('✓ 화제 종목 조회 완료')
+          print(f'조회된 종목 수: {len(result.get(\"stocks\", []))}')
+          "
+
+      # 6. 브리핑 생성
+      - name: Generate briefing
+        id: briefing
+        run: |
+          cd backend
+          python -c "
+          import sys
+          import os
+          from datetime import datetime
+          sys.path.insert(0, '.')
+
+          # 브리핑 생성 로직
+          print('브리핑 생성 중...')
+
+          # daily_briefing_workflow.py 실행
+          from daily_briefing_workflow import main as run_daily_briefing
+
+          result = run_daily_briefing()
+
+          if result.get('success'):
+              print('✓ 브리핑 생성 완료')
+              print(f'생성된 브리핑 ID: {result.get(\"briefing_id\", \"N/A\")}')
+          else:
+              print('✗ 브리핑 생성 실패')
+              sys.exit(1)
+          "
+
+      # 7. 브리핑 발송 (Slack + Email)
+      - name: Send briefing
+        run: |
+          cd backend
+          python -c "
+          import sys
+          import os
+          sys.path.insert(0, '.')
+
+          from send_briefing import send_to_slack, send_to_email
+
+          # Slack 발송
+          slack_result = send_to_slack()
+          if slack_result:
+              print('✓ Slack 발송 완료')
+          else:
+              print('⚠ Slack 발송 실패')
+
+          # Email 발송
+          email_result = send_to_email()
+          if email_result:
+              print('✓ Email 발송 완료')
+          else:
+              print('⚠ Email 발송 실패')
+          "
+
+      # 8. 생성된 파일 업로드 (아티팩트)
+      - name: Upload briefing artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: briefing-${{ github.run_number }}
+          path: |
+            backend/output/**/*.png
+            backend/output/**/*.json
+            backend/output/**/*.txt
+          retention-days: 7
+
+      # 9. 실행 결과 알림
+      - name: Notify completion
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "✓ 일일 브리핑 워크플로우 완료"
+          else
+            echo "✗ 일일 브리핑 워크플로우 실패"
+          fi
