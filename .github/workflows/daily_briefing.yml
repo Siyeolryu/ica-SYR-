@@ -8,6 +8,12 @@ on:
   # 수동 실행 옵션 (테스트용)
   workflow_dispatch:
 
+# 이슈/PR 생성 권한 설정
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
   generate-and-send-briefing:
     runs-on: ubuntu-latest
@@ -62,6 +68,10 @@ jobs:
 
           print('✓ 화제 종목 조회 완료')
           print(f'조회된 종목 수: {len(result.get(\"stocks\", []))}')
+
+          # 결과를 환경 변수로 저장
+          with open('$GITHUB_ENV', 'a') as f:
+              f.write(f'STOCK_COUNT={len(result.get(\"stocks\", []))}\n')
           "
 
       # 6. 브리핑 생성
@@ -85,14 +95,23 @@ jobs:
 
           if result.get('success'):
               print('✓ 브리핑 생성 완료')
-              print(f'생성된 브리핑 ID: {result.get(\"briefing_id\", \"N/A\")}')
+              briefing_id = result.get('briefing_id', 'N/A')
+              print(f'생성된 브리핑 ID: {briefing_id}')
+
+              # 결과를 환경 변수로 저장
+              with open('$GITHUB_ENV', 'a') as f:
+                  f.write(f'BRIEFING_ID={briefing_id}\n')
+                  f.write(f'BRIEFING_SUCCESS=true\n')
           else:
               print('✗ 브리핑 생성 실패')
+              with open('$GITHUB_ENV', 'a') as f:
+                  f.write(f'BRIEFING_SUCCESS=false\n')
               sys.exit(1)
           "
 
       # 7. 브리핑 발송 (Slack + Email)
       - name: Send briefing
+        id: send
         run: |
           cd backend
           python -c "
@@ -102,19 +121,35 @@ jobs:
 
           from send_briefing import send_to_slack, send_to_email
 
+          slack_success = False
+          email_success = False
+
           # Slack 발송
-          slack_result = send_to_slack()
-          if slack_result:
-              print('✓ Slack 발송 완료')
-          else:
-              print('⚠ Slack 발송 실패')
+          try:
+              slack_result = send_to_slack()
+              if slack_result:
+                  print('✓ Slack 발송 완료')
+                  slack_success = True
+              else:
+                  print('⚠ Slack 발송 실패')
+          except Exception as e:
+              print(f'⚠ Slack 발송 오류: {str(e)}')
 
           # Email 발송
-          email_result = send_to_email()
-          if email_result:
-              print('✓ Email 발송 완료')
-          else:
-              print('⚠ Email 발송 실패')
+          try:
+              email_result = send_to_email()
+              if email_result:
+                  print('✓ Email 발송 완료')
+                  email_success = True
+              else:
+                  print('⚠ Email 발송 실패')
+          except Exception as e:
+              print(f'⚠ Email 발송 오류: {str(e)}')
+
+          # 결과 저장
+          with open('$GITHUB_ENV', 'a') as f:
+              f.write(f'SLACK_SUCCESS={slack_success}\n')
+              f.write(f'EMAIL_SUCCESS={email_success}\n')
           "
 
       # 8. 생성된 파일 업로드 (아티팩트)
@@ -122,19 +157,164 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: briefing-${{ github.run_number }}
+          name: briefing-${{ github.run_number }}-${{ github.run_attempt }}
           path: |
             backend/output/**/*.png
             backend/output/**/*.json
             backend/output/**/*.txt
+            backend/output/**/*.pdf
+            backend/output/**/*.docx
+            backend/output/**/*.xlsx
           retention-days: 7
+          if-no-files-found: warn
 
-      # 9. 실행 결과 알림
-      - name: Notify completion
+      # 9. 실행 결과 요약 생성
+      - name: Generate summary
         if: always()
         run: |
-          if [ ${{ job.status }} == 'success' ]; then
-            echo "✓ 일일 브리핑 워크플로우 완료"
+          echo "## 📊 Daily Briefing 실행 결과" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**실행 시간**: $(date +'%Y-%m-%d %H:%M:%S KST')" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow Run**: #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "### ✅ 성공" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- 조회된 종목 수: ${STOCK_COUNT:-N/A}" >> $GITHUB_STEP_SUMMARY
+            echo "- 브리핑 ID: ${BRIEFING_ID:-N/A}" >> $GITHUB_STEP_SUMMARY
+            echo "- Slack 발송: ${SLACK_SUCCESS:-false}" >> $GITHUB_STEP_SUMMARY
+            echo "- Email 발송: ${EMAIL_SUCCESS:-false}" >> $GITHUB_STEP_SUMMARY
           else
-            echo "✗ 일일 브리핑 워크플로우 실패"
+            echo "### ❌ 실패" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "워크플로우 실행 중 오류가 발생했습니다." >> $GITHUB_STEP_SUMMARY
           fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**아티팩트**: [briefing-${{ github.run_number }}-${{ github.run_attempt }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+
+      # 10. 실패 시 Slack 알림
+      - name: Notify failure to Slack
+        if: failure() && secrets.SLACK_WEBHOOK_URL != ''
+        run: |
+          curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "text": "⚠️ Daily Stock Briefing 생성 실패!",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "⚠️ Daily Stock Briefing 실패"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*실행 시간:*\n'"$(date +'%Y-%m-%d %H:%M:%S KST')"'"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Workflow:*\n<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|#${{ github.run_number }}>"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "워크플로우 실행 중 오류가 발생했습니다. 위 링크에서 로그를 확인하세요."
+                  }
+                }
+              ]
+            }'
+
+      # 11. 실행 결과 이슈 생성
+      - name: Create issue with results
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const today = new Date().toISOString().split('T')[0];
+            const runNumber = context.runNumber;
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            const stockCount = process.env.STOCK_COUNT || 'N/A';
+            const briefingId = process.env.BRIEFING_ID || 'N/A';
+            const slackSuccess = process.env.SLACK_SUCCESS === 'true' ? '✅' : '❌';
+            const emailSuccess = process.env.EMAIL_SUCCESS === 'true' ? '✅' : '❌';
+            const jobStatus = '${{ job.status }}';
+
+            const statusEmoji = jobStatus === 'success' ? '✅' : '❌';
+            const statusText = jobStatus === 'success' ? '성공' : '실패';
+
+            const issueTitle = `[Daily Briefing] ${today} - ${statusText}`;
+            const issueBody = `## 📊 Daily Stock Briefing 실행 결과
+
+**실행 시간**: ${today}
+**상태**: ${statusEmoji} ${statusText}
+**Workflow Run**: [#${runNumber}](${runUrl})
+
+---
+
+### 📈 실행 상세
+
+- **조회된 종목 수**: ${stockCount}
+- **브리핑 ID**: ${briefingId}
+- **Slack 발송**: ${slackSuccess}
+- **Email 발송**: ${emailSuccess}
+
+---
+
+### 📎 아티팩트
+
+생성된 브리핑 파일은 [Artifacts](${runUrl}#artifacts)에서 다운로드할 수 있습니다.
+- 보관 기간: 7일
+- 파일명: \`briefing-${runNumber}-${{ github.run_attempt }}\`
+
+---
+
+### 🔗 링크
+
+- [Workflow 로그 보기](${runUrl})
+- [저장소 Actions](https://github.com/${context.repo.owner}/${context.repo.repo}/actions)
+
+---
+
+*이 이슈는 GitHub Actions에 의해 자동 생성되었습니다.*
+`;
+
+            // 이슈 생성
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: issueTitle,
+              body: issueBody,
+              labels: ['automated', 'daily-briefing', jobStatus === 'success' ? 'success' : 'failure']
+            });
+
+      # 12. 최종 상태 출력
+      - name: Final status
+        if: always()
+        run: |
+          echo "========================================="
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ 일일 브리핑 워크플로우 완료"
+            echo "========================================="
+            echo ""
+            echo "📊 실행 결과:"
+            echo "  - 종목 수: ${STOCK_COUNT:-N/A}"
+            echo "  - 브리핑 ID: ${BRIEFING_ID:-N/A}"
+            echo "  - Slack: ${SLACK_SUCCESS:-false}"
+            echo "  - Email: ${EMAIL_SUCCESS:-false}"
+          else
+            echo "❌ 일일 브리핑 워크플로우 실패"
+            echo "========================================="
+            echo ""
+            echo "로그를 확인하여 문제를 해결하세요."
+          fi
+          echo ""
