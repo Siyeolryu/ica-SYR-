@@ -125,3 +125,11 @@ python backend/yfinance_stocks.py
 
 
 
+
+
+
+
+
+
+
+

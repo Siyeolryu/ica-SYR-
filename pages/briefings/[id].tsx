@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { getBriefingById, formatDate } from '@/lib/mockData';
 import Button from '@/components/Button';
 import StockCard from '@/components/StockCard';
@@ -94,16 +95,21 @@ export default function BriefingDetail() {
       <section className="card">
         <h2 className="text-xl font-semibold text-white mb-4">브리핑 이미지</h2>
         <div className="bg-dark-bg rounded-lg border border-dark-border p-4 flex items-center justify-center">
-          <img
-            src={briefing.imageUrl}
-            alt="브리핑 이미지"
-            className="max-w-full h-auto rounded-lg"
-            onError={(e) => {
-              // 이미지 로드 실패 시 플레이스홀더 표시
-              const target = e.target as HTMLImageElement;
-              target.src = `https://via.placeholder.com/1200x1600/1e293b/64748b?text=브리핑+이미지`;
-            }}
-          />
+          <div className="relative w-full max-w-3xl aspect-[3/4]">
+            <Image
+              src={briefing.imageUrl}
+              alt="브리핑 이미지"
+              fill
+              className="object-contain rounded-lg"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
+              priority
+              onError={(e) => {
+                // 이미지 로드 실패 시 플레이스홀더 표시
+                const target = e.target as HTMLImageElement;
+                target.src = `https://via.placeholder.com/1200x1600/1e293b/64748b?text=브리핑+이미지`;
+              }}
+            />
+          </div>
         </div>
       </section>
 

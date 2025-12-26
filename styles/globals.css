@@ -4,27 +4,122 @@
 
 @layer base {
   body {
-    @apply bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-100 transition-colors duration-300;
+    @apply bg-light-bg dark:bg-dark-bg text-slate-900 dark:text-slate-100 transition-colors duration-300;
   }
 }
 
 @layer components {
+  /* Card Component - 입체감과 생동감 */
   .card {
-    @apply bg-light-card dark:bg-dark-card rounded-lg border border-light-border dark:border-dark-border p-6 shadow-lg transition-colors duration-300;
+    @apply bg-gradient-to-br from-white via-white to-primary-50/50
+           dark:from-dark-card dark:via-dark-card dark:to-primary-900/10
+           rounded-xl border border-light-border/80 dark:border-dark-border/50
+           p-6 shadow-lg
+           transition-all duration-300 ease-out
+           hover:shadow-xl hover:shadow-primary-500/10 dark:hover:shadow-primary-500/5
+           hover:-translate-y-1;
   }
-  
+
+  /* Primary Button - 그라데이션 효과 */
   .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply bg-gradient-to-r from-primary-500 to-primary-600
+           hover:from-primary-600 hover:to-primary-700
+           text-white font-semibold
+           py-3 px-6 rounded-xl
+           shadow-lg shadow-primary-500/30
+           hover:shadow-xl hover:shadow-primary-500/40
+           hover:-translate-y-0.5 active:translate-y-0
+           transition-all duration-200 ease-out;
   }
-  
+
+  /* Secondary Button - 골드 그라데이션 */
   .btn-secondary {
-    @apply bg-light-card dark:bg-dark-card hover:bg-light-border dark:hover:bg-dark-border border border-light-border dark:border-dark-border text-gray-900 dark:text-gray-100 font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply bg-gradient-to-r from-secondary-400 to-secondary-500
+           hover:from-secondary-500 hover:to-secondary-600
+           text-white font-semibold
+           py-3 px-6 rounded-xl
+           shadow-lg shadow-secondary-500/30
+           hover:shadow-xl hover:shadow-secondary-500/40
+           hover:-translate-y-0.5 active:translate-y-0
+           transition-all duration-200 ease-out;
+  }
+
+  /* Ghost Button - 투명 효과 */
+  .btn-ghost {
+    @apply bg-transparent border-2 border-primary-400 dark:border-primary-600
+           text-primary-600 dark:text-primary-400
+           hover:bg-primary-50 dark:hover:bg-primary-900/20
+           font-semibold py-3 px-6 rounded-xl
+           hover:-translate-y-0.5 active:translate-y-0
+           transition-all duration-200 ease-out;
+  }
+
+  /* Badge Components */
+  .badge-primary {
+    @apply inline-flex items-center px-3 py-1 rounded-full
+           bg-gradient-to-r from-primary-100 to-primary-200
+           dark:from-primary-900/30 dark:to-primary-800/30
+           text-primary-700 dark:text-primary-400
+           text-sm font-semibold;
+  }
+
+  .badge-gold {
+    @apply inline-flex items-center px-3 py-1 rounded-full
+           bg-gradient-to-r from-secondary-100 to-secondary-200
+           dark:from-secondary-900/30 dark:to-secondary-800/30
+           text-secondary-700 dark:text-secondary-400
+           text-sm font-semibold;
+  }
+
+  .badge-success {
+    @apply inline-flex items-center px-3 py-1 rounded-full
+           bg-emerald-100 dark:bg-emerald-900/30
+           text-emerald-700 dark:text-emerald-400
+           text-sm font-semibold;
+  }
+
+  /* Gradient Text Effects */
+  .text-gradient-primary {
+    @apply bg-gradient-to-r from-primary-600 to-purple-600
+           dark:from-primary-400 dark:to-purple-400
+           bg-clip-text text-transparent;
+  }
+
+  .text-gradient-gold {
+    @apply bg-gradient-to-r from-secondary-500 to-rose-500
+           dark:from-secondary-400 dark:to-rose-400
+           bg-clip-text text-transparent;
+  }
+
+  /* Input Fields */
+  .input {
+    @apply bg-white dark:bg-dark-bg
+           border-2 border-light-border dark:border-dark-border
+           rounded-xl px-4 py-3
+           text-slate-900 dark:text-slate-100
+           focus:outline-none focus:border-primary-400 dark:focus:border-primary-600
+           focus:ring-4 focus:ring-primary-400/10 dark:focus:ring-primary-600/10
+           transition-all duration-200;
+  }
+
+  /* Loading Spinner */
+  .spinner {
+    @apply w-8 h-8 border-4 border-primary-200 dark:border-primary-800 border-t-primary-500 dark:border-t-primary-400 rounded-full animate-spin;
+  }
+
+  /* Section Background */
+  .section-bg-warm {
+    @apply bg-gradient-to-br from-secondary-50/50 via-white to-rose-50/30
+           dark:from-secondary-900/5 dark:via-dark-bg dark:to-rose-900/5;
+  }
+
+  .section-bg-cool {
+    @apply bg-gradient-to-br from-primary-50/50 via-white to-blue-50/30
+           dark:from-primary-900/5 dark:via-dark-bg dark:to-blue-900/5;
+  }
+
+  .section-bg-fresh {
+    @apply bg-gradient-to-br from-accent-50/50 via-white to-emerald-50/30
+           dark:from-accent-900/5 dark:via-dark-bg dark:to-emerald-900/5;
   }
 }
-
-
-
-
-
-
-

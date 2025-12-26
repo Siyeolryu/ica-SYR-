@@ -76,3 +76,11 @@ export default function MiniStockChart({ data, isPositive, height = 150 }: MiniS
   );
 }
 
+
+
+
+
+
+
+
+

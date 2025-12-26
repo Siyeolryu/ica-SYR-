@@ -106,7 +106,7 @@ export const mockBriefings: Briefing[] = [
     generatedAt: today.toISOString(),
     status: 'completed',
     stocks: [mockTrendingStocks[0], mockTrendingStocks[1]],
-    imageUrl: '/api/placeholder/1200/1600',
+    imageUrl: 'https://via.placeholder.com/1200x1600/1e293b/64748b?text=Today%27s+Briefing',
     textContent: {
       title: '오늘의 화제 종목 브리핑',
       summary: `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일 미국 증시에서 가장 활발했던 종목들을 정리했습니다. 애플과 테슬라가 거래량과 상승률에서 두각을 나타냈습니다.`,
@@ -131,7 +131,7 @@ export const mockBriefings: Briefing[] = [
     generatedAt: yesterday.toISOString(),
     status: 'completed',
     stocks: [mockTrendingStocks[2], mockTrendingStocks[3]],
-    imageUrl: '/api/placeholder/1200/1600',
+    imageUrl: 'https://via.placeholder.com/1200x1600/1e293b/64748b?text=Yesterday%27s+Briefing',
     textContent: {
       title: '어제의 화제 종목 브리핑',
       summary: `${yesterday.getFullYear()}년 ${yesterday.getMonth() + 1}월 ${yesterday.getDate()}일 미국 증시 동향입니다.`,
@@ -156,7 +156,7 @@ export const mockBriefings: Briefing[] = [
     generatedAt: twoDaysAgo.toISOString(),
     status: 'completed',
     stocks: [mockTrendingStocks[4]],
-    imageUrl: '/api/placeholder/1200/1600',
+    imageUrl: 'https://via.placeholder.com/1200x1600/1e293b/64748b?text=Previous+Briefing',
     textContent: {
       title: '이틀 전 화제 종목 브리핑',
       summary: `${twoDaysAgo.getFullYear()}년 ${twoDaysAgo.getMonth() + 1}월 ${twoDaysAgo.getDate()}일 미국 증시 동향입니다.`,

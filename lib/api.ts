@@ -130,3 +130,125 @@ export async function checkBackendHealth(): Promise<boolean> {
   }
 }
 
+// ============= 브리핑 관련 타입 및 함수 =============
+
+export interface BriefingStock {
+  symbol: string;
+  name: string;
+  price: number;
+  change_percent: number;
+  volume: number;
+}
+
+export interface BriefingContent {
+  text: {
+    title: string;
+    summary: string;
+    sections: Array<{
+      stock_symbol?: string;
+      title: string;
+      content: string;
+    }>;
+  };
+  image: {
+    url: string;
+    thumbnail_url: string;
+    width: number;
+    height: number;
+    format: string;
+  } | null;
+}
+
+export interface BriefingMetadata {
+  template_used: string;
+  generation_time_ms?: number;
+  ai_model: string;
+  language: string;
+  docx_url?: string;
+}
+
+export interface Briefing {
+  briefing_id: string;
+  generated_at: string;
+  status: string;
+  stocks_count: number;
+  stocks: BriefingStock[];
+  content: BriefingContent;
+  metadata: BriefingMetadata;
+  sent_channels: string[];
+  view_count: number;
+}
+
+export interface BriefingListResponse {
+  success: boolean;
+  data: {
+    briefings: Briefing[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      total_pages: number;
+      has_next: boolean;
+      has_prev: boolean;
+    };
+  };
+}
+
+export interface BriefingDetailResponse {
+  success: boolean;
+  data: Briefing;
+}
+
+/**
+ * 브리핑 목록 조회
+ */
+export async function fetchBriefings(
+  page: number = 1,
+  limit: number = 20
+): Promise<BriefingListResponse['data'] | null> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/v1/briefings?page=${page}&limit=${limit}`
+    );
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data: BriefingListResponse = await response.json();
+    return data.data;
+  } catch (error) {
+    console.error('Failed to fetch briefings:', error);
+    return null;
+  }
+}
+
+/**
+ * 브리핑 상세 조회
+ */
+export async function fetchBriefingById(briefingId: string): Promise<Briefing | null> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/v1/briefings/${briefingId}`
+    );
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data: BriefingDetailResponse = await response.json();
+    return data.data;
+  } catch (error) {
+    console.error(`Failed to fetch briefing ${briefingId}:`, error);
+    return null;
+  }
+}
+
+
+
+
+
+
+
+
+

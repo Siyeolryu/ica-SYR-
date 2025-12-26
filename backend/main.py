@@ -3,9 +3,11 @@
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from api import stocks, briefings, auth
 from routers import news
+from pathlib import Path
 import logging
 
 # 로깅 설정
@@ -70,6 +72,11 @@ app.include_router(stocks.router, prefix="/v1")
 app.include_router(briefings.router, prefix="/v1")
 app.include_router(auth.router, prefix="/v1/auth")
 app.include_router(news.router, prefix="/v1")  # Exa 뉴스 API
+
+# 정적 파일 서빙 (브리핑 이미지 및 문서)
+output_dir = Path(__file__).parent / 'output'
+output_dir.mkdir(exist_ok=True)
+app.mount("/api/briefings/files", StaticFiles(directory=str(output_dir)), name="briefings")
 
 # 헬스체크 엔드포인트
 @app.get("/health", tags=["Health"])

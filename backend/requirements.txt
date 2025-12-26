@@ -24,3 +24,6 @@ Pillow>=10.0.0
 
 # Pydantic (FastAPI에 포함되지만 명시)
 pydantic>=2.0.0
+
+# Excel 파일 처리
+openpyxl>=3.1.0
